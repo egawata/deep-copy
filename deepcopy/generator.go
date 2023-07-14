@@ -27,10 +27,11 @@ func (l SkipLists) Get(i int) (s skips) {
 }
 
 type Generator struct {
-	isPtrRecv  bool
-	maxDepth   int
-	methodName string
-	skipLists  SkipLists
+	isPtrRecv     bool
+	maxDepth      int
+	methodName    string
+	skipLists     SkipLists
+	reuseReceiver bool
 
 	imports       map[string]string
 	fns           [][]byte
@@ -38,13 +39,14 @@ type Generator struct {
 }
 
 func NewGenerator(
-	isPtrRecv bool, methodName string, skipLists SkipLists, maxDepth int,
+	isPtrRecv bool, methodName string, skipLists SkipLists, maxDepth int, reuseReceiver bool,
 ) Generator {
 	return Generator{
-		isPtrRecv:  isPtrRecv,
-		methodName: methodName,
-		maxDepth:   maxDepth,
-		skipLists:  skipLists,
+		isPtrRecv:     isPtrRecv,
+		methodName:    methodName,
+		maxDepth:      maxDepth,
+		skipLists:     skipLists,
+		reuseReceiver: reuseReceiver,
 
 		imports: map[string]string{},
 		fns:     [][]byte{},
@@ -88,11 +90,14 @@ func (g Generator) Generate(w io.Writer, types []string, p *packages.Package) er
 	}
 
 	var err error
-	g.receiverNames, err = getReceiverNames(p)
-	if err != nil {
-		return fmt.Errorf("getting receiver names: %v", err)
+
+	if g.reuseReceiver {
+		g.receiverNames, err = getReceiverNames(p)
+		if err != nil {
+			return fmt.Errorf("getting receiver names: %v", err)
+		}
+		fmt.Printf("receivers = %#v\n", g.receiverNames)
 	}
-	fmt.Printf("receivers = %#v\n", g.receiverNames)
 
 	for i, obj := range objs {
 		fn, err := g.generateFunc(p, obj, g.skipLists.Get(i), objs)
@@ -125,6 +130,7 @@ func (g Generator) generateFunc(p *packages.Package, obj object, skips skips, ge
 		fmt.Printf("receiver name for %s is %s\n", kind, g.receiverNames[kind])
 		source = g.receiverNames[kind]
 	}
+
 	fmt.Fprintf(&buf, `// %s generates a deep copy of %s%s
 func (%s %s%s) %s() %s%s {
 	var cp %s = %s%s
