@@ -155,6 +155,6 @@ func run(
 
 func load(patterns string) ([]*packages.Package, error) {
 	return packages.Load(&packages.Config{
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedDeps | packages.NeedImports,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedDeps | packages.NeedImports | packages.NeedSyntax,
 	}, patterns)
 }

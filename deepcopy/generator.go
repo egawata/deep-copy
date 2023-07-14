@@ -32,8 +32,9 @@ type Generator struct {
 	methodName string
 	skipLists  SkipLists
 
-	imports map[string]string
-	fns     [][]byte
+	imports       map[string]string
+	fns           [][]byte
+	receiverNames map[string]string
 }
 
 func NewGenerator(
@@ -86,6 +87,13 @@ func (g Generator) Generate(w io.Writer, types []string, p *packages.Package) er
 		objs[i] = obj
 	}
 
+	var err error
+	g.receiverNames, err = getReceiverNames(p)
+	if err != nil {
+		return fmt.Errorf("getting receiver names: %v", err)
+	}
+	fmt.Printf("receivers = %#v\n", g.receiverNames)
+
 	for i, obj := range objs {
 		fn, err := g.generateFunc(p, obj, g.skipLists.Get(i), objs)
 		if err != nil {
@@ -95,7 +103,7 @@ func (g Generator) Generate(w io.Writer, types []string, p *packages.Package) er
 		g.fns = append(g.fns, fn)
 	}
 
-	err := g.generateFile(w, p)
+	err = g.generateFile(w, p)
 	if err != nil {
 		return fmt.Errorf("generating file content: %v", err)
 	}
@@ -113,10 +121,14 @@ func (g Generator) generateFunc(p *packages.Package, obj object, skips skips, ge
 	kind := obj.Obj().Name()
 
 	source := "o"
+	if g.receiverNames != nil && g.receiverNames[kind] != "" {
+		fmt.Printf("receiver name for %s is %s\n", kind, g.receiverNames[kind])
+		source = g.receiverNames[kind]
+	}
 	fmt.Fprintf(&buf, `// %s generates a deep copy of %s%s
-func (o %s%s) %s() %s%s {
+func (%s %s%s) %s() %s%s {
 	var cp %s = %s%s
-`, g.methodName, ptr, kind, ptr, kind, g.methodName, ptr, kind, kind, ptr, source)
+`, g.methodName, ptr, kind, source, ptr, kind, g.methodName, ptr, kind, kind, ptr, source)
 
 	g.walkType(source, "cp", p.Name, obj, &buf, skips, generating, 0)
 
