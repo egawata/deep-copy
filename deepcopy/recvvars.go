@@ -1,7 +1,7 @@
 package deepcopy
 
 import (
-	"errors"
+	"fmt"
 	"go/ast"
 	"regexp"
 	"sync"
@@ -12,7 +12,7 @@ import (
 // getReceiverNames returns a map of type name and its receiver name in the package.
 func getReceiverNames(pkg *packages.Package) (map[string]string, error) {
 	if pkg.Syntax == nil || len(pkg.Syntax) == 0 {
-		return nil, errors.New("packages.Package has no Syntax.")
+		return nil, fmt.Errorf("package %s has no Syntax.", pkg.Name)
 	}
 
 	v := &recvVarVisitor{}
