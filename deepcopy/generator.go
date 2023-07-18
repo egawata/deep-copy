@@ -96,7 +96,6 @@ func (g Generator) Generate(w io.Writer, types []string, p *packages.Package) er
 		if err != nil {
 			return fmt.Errorf("getting receiver names: %v", err)
 		}
-		fmt.Printf("receivers = %#v\n", g.receiverNames)
 	}
 
 	for i, obj := range objs {
@@ -127,7 +126,6 @@ func (g Generator) generateFunc(p *packages.Package, obj object, skips skips, ge
 
 	source := "o"
 	if g.receiverNames != nil && g.receiverNames[kind] != "" {
-		fmt.Printf("receiver name for %s is %s\n", kind, g.receiverNames[kind])
 		source = g.receiverNames[kind]
 	}
 
